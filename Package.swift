@@ -14,6 +14,21 @@ import PackageDescription
 
 let package = Package(
     name: "MLXAppIntents",
+    // Deployment floors: `Duration` / `ContinuousClock` / `Task.sleep(for:)`
+    // need macOS 13 / iOS 16+. We set macOS 14 / iOS 17 to match the MLX
+    // floor (mlx-swift-lm declares .macOS(.v14) / .iOS(.v17)) — without
+    // this, Xcode defaults to a much older deployment target and reports
+    // "'Duration' is only available in macOS 13.0 or newer" (and the same
+    // for ContinuousClock) on every use site in MLXAgentRunner.
+    platforms: [
+        .macOS(.v14),
+        .iOS(.v17),
+        .tvOS(.v17),
+        .visionOS(.v1),
+    ],
+    // swift-tools 6.0 already defaults the package to Swift 6 language
+    // mode; no explicit swiftLanguageModes needed (and its argument
+    // position varies by toolchain, so spelling it out breaks the build).
     products: [
         .library(name: "MLXAppIntents", targets: ["MLXAppIntents"]),
         .library(name: "MLXAppIntentsTestKit", targets: ["MLXAppIntentsTestKit"]),
