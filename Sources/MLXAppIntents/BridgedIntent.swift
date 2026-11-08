@@ -7,9 +7,23 @@
 //    requirement for a conforming struct (an extension default may not
 //    satisfy an opaque `some IntentResult` requirement the way a
 //    concrete implementation does).
-// 2. `LocalizedStringResource(stringLiteral:)` as used for `title`.
-// 3. Whether `IntentDescription(toolDescription)` is the right
-//    initializer shape for the `description` property.
+// 2. FIXED 2026-11-07 (Apple docs, verified via developer.apple.com):
+//    `IntentDescription` has NO initializer taking a plain `String` —
+//    both inits take a `LocalizedStringResource` first, plus
+//    `categoryName: LocalizedStringResource?` and
+//    `searchKeywords: [LocalizedStringResource]`. A string *literal*
+//    works in examples only because `IntentDescription` conforms to
+//    `ExpressibleByStringLiteral`; a `String` variable does not convert.
+//    Fix: wrap the variable first —
+//    `LocalizedStringResource(toolDescription)` uses the
+//    `init(_:table:locale:bundle:comment:)` key initializer, which DOES
+//    take a `String`. Same fix applied to `title` below, which had the
+//    same latent bug (`stringLiteral:` takes a `StaticString`, not a
+//    `String` variable). Re-verify in Xcode; this file still does not
+//    compile on Linux (`#if canImport(AppIntents)`).
+// 3. See (2) — `IntentDescription(toolDescription)` replaced with
+//    `IntentDescription(LocalizedStringResource(toolDescription),
+//    categoryName: nil, searchKeywords: [])`.
 // 4. Whether `.result(dialog:)` accepts the `"\(result)"` string for a
 //    Codable `ResultValue` (a real implementation should format the
 //    result into a user-facing dialog, not interpolate the struct).
@@ -37,11 +51,15 @@ public protocol BridgedIntent: AppIntent, IntentTool {
 
 extension BridgedIntent {
     public static var title: LocalizedStringResource {
-        LocalizedStringResource(stringLiteral: toolName)
+        LocalizedStringResource(toolName)
     }
 
     public static var description: IntentDescription? {
-        IntentDescription(toolDescription)
+        IntentDescription(
+            LocalizedStringResource(toolDescription),
+            categoryName: nil,
+            searchKeywords: []
+        )
     }
 
     public func perform() async throws -> some IntentResult {
